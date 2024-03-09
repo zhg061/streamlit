@@ -26,17 +26,7 @@ import numpy as np
 
 LOGGER = get_logger(__name__)
 
-def create_dataframe():
-    skey = st.secrets["gcp_service_account"]
-    credentials = Credentials.from_service_account_info(
-      skey,
-      scopes=st.secrets.scopes,
-    )
-    client = gspread.authorize(credentials)
-    url="https://docs.google.com/spreadsheets/d/11ofUhzFKWPBCJxI-Xj-coL34ie0VE-XkHKA_SQcDOSI/edit#gid=1941987294"
-    sh = client.open_by_url(url)
-    df = pd.DataFrame(sh.worksheet("Total").get_all_records())
-    return df
+
 
 def run():
     st.set_page_config(
@@ -55,5 +45,3 @@ def run():
 
 if __name__ == "__main__":
     run()
-    df = create_dataframe()
-    df
