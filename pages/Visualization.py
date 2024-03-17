@@ -38,12 +38,12 @@ def create_dataframe():
     sh = client.open_by_url(url)
     df = pd.DataFrame(sh.worksheet("Total").get_all_records())
     df['Date'] = pd.to_datetime(df['Date']).dt.date
+    df['month'] = pd.to_datetime(df['Date']).dt.month
     return df
 def plotting_demo(df):
     st.write("# Total Revenue By Date")
     progress_bar = st.progress(0)
-    status_text = st.empty()   
-    
+    status_text = st.empty()  
     df = df.groupby('Date')['Price'].sum().reset_index()
     df = df.sort_values(by='Date', ascending=True)
     last_rows = np.array([[df.iloc[0, 0]]])
@@ -59,6 +59,7 @@ def plotting_demo(df):
 
     progress_bar.empty()
     status_text.empty()
+    df
     # Streamlit widgets automatically run the script from top to bottom. Since
     # this button is not connected to any other logic, it just causes a plain
     # rerun.
@@ -108,7 +109,7 @@ st.set_page_config(page_title="Total Revenue By Date", page_icon="📈")
 st.write(
     """"""
 )
-
+st.button("Re-run")
 df = create_dataframe()
 min_date = df['Date'].min()
 max_date = df['Date'].max()
