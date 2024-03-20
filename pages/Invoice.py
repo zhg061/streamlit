@@ -45,14 +45,15 @@ crystal_names = [
         'chrysocolla','lepidolite','smoky quartz','beryl','azurite','volcano agate',
         'volcano ash','sphalerite','ocean jasper','pink agate','white druzy agate',
         'flower agate''agate','yooperlite','sphalerite','petrified wood','septarian',
-        'deal'
+        'shiva shells','deal', 'epidote', 'blue lace'
     ]
 shapes=['tower', 'pen', 'mushroom', 'bowl', 'palm stones', 'tumble', 'sphere',
       'mini sphere', 'bracelet', 'necklace', 'pendant', 'ring', 'raw', 'free form',
       'elephant', 'santa', 'carving', 'conch', 'point', 'moon', 'worry stone',
       'string', 'turtle', 'slab', 'cupcake', 'dragon', 'skull', 'pikachu', 'hair clip',
       'body', 'heart', 'tree', 'frame', 'massager', 'bear', 'flower', 'rose', 'star',
-      'lizard', 'light', 'pot', 'butterfly', 'wing', 'sunflower', 'frog', 'lotus', 'deal']
+      'lizard', 'light', 'pot', 'butterfly', 'wing', 'sunflower', 'frog', 'lotus', 'deal',
+      'shell']
 # Set the New York time zone
 new_york_timezone = pytz.timezone('America/New_York')
 # Get the current time in the New York time zone
@@ -212,7 +213,7 @@ def send_invoice(df, Username, user_name_dict, user_email_dict):
       invoice['primary_recipients'][0]['billing_info']['name']['surname']=Username
       invoice['primary_recipients'][0]['billing_info']['name']['given_name']=user_name_dict[Username]
       # change
-    #   invoice["primary_recipients"][0]["billing_info"]["email_address"] = user_email_dict[Username]
+      invoice["primary_recipients"][0]["billing_info"]["email_address"] = user_email_dict[Username]
       for i in range(df.shape[0]):
         # change
         # if (df.iloc[i].Date == "12/21/2023"):
@@ -248,13 +249,13 @@ def send_invoice(df, Username, user_name_dict, user_email_dict):
           data = '{ "send_to_invoicer": true }'
           response = requests.post(f'https://api-m.paypal.com/v2/invoicing/invoices/{invoice_id}/send', headers=headers, data=data)
           if response.status_code == 200:
-            st.write("Invoice sent successfully.")
+            st.write("Invoice sent successfully for: ", Username)
           else:
-            st.write("Failed to send invoice.")
+            st.write("Failed to send invoice for: ", Username)
             st.write("Status Code:", response.status_code)
             st.write("Error Message:", response.text)
       else:
-          st.write("Failed to create invoice.")
+          st.write("Failed to create invoice for: ", Username)
           st.write("Status Code:", create_invoice_response.status_code)
           st.write("Error Message:", create_invoice_response.text)
   else:
@@ -322,7 +323,7 @@ def load_data(sheet_import):
     weekly['Date'] = weekly['Date'].apply(lambda x: x + '/2023' if len(x) <= 8 else x)
     dates = pd.to_datetime(weekly['Date'])
     weekly['Weekday'] = dates.dt.weekday
-    st.title("Check the following information:")
+    st.title("Invoice Summary:")
     st.write("Total Amount", np.sum(weekly.Price))
     # Merge the two DataFrames on "Username"
     if 'Username' in weekly.columns:
@@ -384,7 +385,7 @@ def select_sheet():
     sheets = workbook.worksheets()
     option = st.radio('Select a sheet to begin:', (sheet.title for sheet in sheets[-5:]))
     folder = option
-    folder = folder.replace("\\", "")
+    folder = folder.replace("/", "")
     os.makedirs('./files/invoices/' + folder, exist_ok=True)
     # Button for action
     if st.button("Confirm & Load Data"):
@@ -400,8 +401,6 @@ def select_sheet():
           total = pd.DataFrame(total_import.get_all_records())
           if folder not in np.unique(total['Sheet']):
               weekly['Sheet'] = folder
-              folder
-              weekly
               merged = pd.merge(weekly, customer, on='Username', how='left')
               merged = merged.drop(columns=['Username', 'Email', 'App', 'Pickup', 'Name', 'DateAdded'])
               total = pd.concat([total, merged], ignore_index=True)          
@@ -414,9 +413,16 @@ def select_sheet():
               df = weekly[weekly.Username == Username]
               generate_pdf_invoice(df, Username, folder, user_name_dict)
           status.update(label="Sending Invoices", expanded=True)
-          for Username in usernames:
+          status_text = st.empty() 
+          progress_bar = st.progress(0)
+          for i in range(len(usernames)):
+              Username = usernames[i]
+              status_text.text("%i%% Complete" % int(100*(i+1)/len(usernames)))
+              progress_bar.progress((i+1)/len(usernames))
               df = weekly[weekly.Username == Username]
-              # send_invoice(df, Username, user_name_dict, user_email_dict)
+            #   send_invoice(df, Username, user_name_dict, user_email_dict)
+          status_text.empty()
+          progress_bar.empty()
           status.update(label="Done", state="complete", expanded=True)
 
 
