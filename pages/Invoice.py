@@ -305,7 +305,7 @@ def load_data(sheet_import):
           st.stop()    
     if weekly['Price'].dtype == 'object':
         weekly['Price'] = weekly['Price'].str.replace('$', '')#.str.replace('.00', '')
-    weekly['Price'] = weekly['Price'].apply(lambda x: float(x) if x else None)
+    weekly['Price'] = weekly['Price'].astype(float)
     # weekly['Username'] = weekly['Username'].str.replace(' ', '')
     if 'Username' in weekly.columns:
         weekly['Username'] = weekly['Username'].apply(remove_special_characters)

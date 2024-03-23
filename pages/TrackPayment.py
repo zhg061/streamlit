@@ -40,7 +40,7 @@ def select_sheet():
         max_date = weekly['Date'].max()
         date_format = "%m/%d/%Y"
         usernames = get_invoice(datetime.strptime(min_date, date_format).date(), 
-        datetime.strptime(max_date, date_format).date() + timedelta(days=2))
+        datetime.strptime(max_date, date_format).date() + timedelta(days=8))
         if isinstance(usernames, pd.Series):
             for username in usernames:
                 if (weekly[(weekly['Username'] == username) & (weekly['BoxClosed'] != 1)]['BoxClosed']).any():
