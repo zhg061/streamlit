@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 from google.oauth2.service_account import Credentials
 import gspread
 import os
+import numpy as np
 
 
 def printPDF(username, folder):
@@ -36,18 +37,19 @@ def select_sheet():
         sheet_import = workbook.worksheet(option)
         weekly_records = sheet_import.get_all_records()
         weekly = pd.DataFrame.from_dict(weekly_records)
-        min_date = weekly['Date'].min()
-        max_date = weekly['Date'].max()
         date_format = "%m/%d/%Y"
-        usernames = get_invoice(datetime.strptime(min_date, date_format).date(), 
-        datetime.strptime(max_date, date_format).date() + timedelta(days=8))
-        if isinstance(usernames, pd.Series):
-            for username in usernames:
-                if (weekly[(weekly['Username'] == username) & (weekly['BoxClosed'] != 1)]['BoxClosed']).any():
-                    st.write(username, " just paid")
-                    # printPDF(username, folder)
-                weekly.loc[weekly['Username'] == username, 'BoxClosed'] = 1
-            # sheet_import.update([weekly.columns.values.tolist()] + weekly.fillna(-1).values.tolist())
+        min_date = datetime.strptime(weekly['Date'].max(), date_format).date()
+        max_date = datetime.strptime(datetime.now().date().strftime(date_format), date_format).date()
+        
+        usernames = get_invoice(min_date, max_date)
+        for username in usernames:             
+            if weekly[weekly['Username'] == username]['BoxClosed'].iloc[0] == '':
+                st.write(username, " just paid")
+                if np.sum(weekly[weekly['Username'] == username]['Price']) >= 50:
+                    st.write(username, " free geode")
+                # printPDF(username, folder)
+            weekly.loc[weekly['Username'] == username, 'BoxClosed'] = 1
+        sheet_import.update([weekly.columns.values.tolist()] + weekly.fillna(-1).values.tolist())
 
 
 def get_invoice(min_date, max_date):
@@ -99,12 +101,12 @@ def get_invoice(min_date, max_date):
           st.write("Failed to create invoice for: ", Username)
           st.write("Status Code:", create_invoice_response.status_code)
           st.write("Error Message:", create_invoice_response.text)
-          return -1
+          return []
   else:
       st.write("Failed to obtain a new access token.")
       st.write("Status Code:", token_response.status_code)
       st.write("Error Message:", token_response.text)
-      return -1
+      return []
 select_sheet()
 
 

@@ -381,9 +381,11 @@ def select_sheet():
     )
     client = gspread.authorize(credentials)
     # url=st.secrets.gcp_service_account.spreadsheet
-    workbook = client.open_by_url(st.secrets.gcp_service_account.spreadsheet)
+    workbookoption = st.radio('Select a workbook to begin:', (workbook for workbook in st.secrets.gcp_service_account.spreadsheets))
+    workbook = client.open(workbookoption)
+    
     sheets = workbook.worksheets()
-    option = st.radio('Select a sheet to begin:', (sheet.title for sheet in sheets[-5:]))
+    option = st.radio('Select a sheet:', (sheet.title for sheet in sheets[-5:]))
     folder = option
     folder = folder.replace("/", "")
     os.makedirs('./files/invoices/' + folder, exist_ok=True)
@@ -397,7 +399,8 @@ def select_sheet():
           # update total 
           status.update(label="Update Total...", expanded=True)
           # change: sheet name
-          total_import = workbook.worksheet("Total")
+          summary = client.open('Summary')
+          total_import = summary.worksheet("Total")
           total = pd.DataFrame(total_import.get_all_records())
           if folder not in np.unique(total['Sheet']):
               weekly['Sheet'] = folder
@@ -406,23 +409,23 @@ def select_sheet():
               total = pd.concat([total, merged], ignore_index=True)          
               total_import.update([total.columns.values.tolist()] + total.fillna(-1).values.tolist())
           # pdf
-          status.update(label="Generating invoice PDF...", expanded=True)
-          users = np.unique(weekly.Username)
-          for i in range(len(users)):
-              Username= users[i]
-              df = weekly[weekly.Username == Username]
-              generate_pdf_invoice(df, Username, folder, user_name_dict)
-          status.update(label="Sending Invoices", expanded=True)
-          status_text = st.empty() 
-          progress_bar = st.progress(0)
-          for i in range(len(usernames)):
-              Username = usernames[i]
-              status_text.text("%i%% Complete" % int(100*(i+1)/len(usernames)))
-              progress_bar.progress((i+1)/len(usernames))
-              df = weekly[weekly.Username == Username]
-            #   send_invoice(df, Username, user_name_dict, user_email_dict)
-          status_text.empty()
-          progress_bar.empty()
+        #   status.update(label="Generating invoice PDF...", expanded=True)
+        #   users = np.unique(weekly.Username)
+        #   for i in range(len(users)):
+        #       Username= users[i]
+        #       df = weekly[weekly.Username == Username]
+        #       generate_pdf_invoice(df, Username, folder, user_name_dict)
+        #   status.update(label="Sending Invoices", expanded=True)
+        #   status_text = st.empty() 
+        #   progress_bar = st.progress(0)
+        #   for i in range(len(usernames)):
+        #       Username = usernames[i]
+        #       status_text.text("%i%% Complete" % int(100*(i+1)/len(usernames)))
+        #       progress_bar.progress((i+1)/len(usernames))
+        #       df = weekly[weekly.Username == Username]
+        #       send_invoice(df, Username, user_name_dict, user_email_dict)
+        #   status_text.empty()
+        #   progress_bar.empty()
           status.update(label="Done", state="complete", expanded=True)
 
 

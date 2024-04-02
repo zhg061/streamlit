@@ -34,8 +34,7 @@ def create_dataframe():
       scopes=st.secrets.scopes,
     )
     client = gspread.authorize(credentials)
-    url=st.secrets.gcp_service_account.spreadsheet
-    sh = client.open_by_url(url)
+    sh = client.open('Summary')
     df = pd.DataFrame(sh.worksheet("Total").get_all_records())
     df['Date'] = pd.to_datetime(df['Date']).dt.date
     df['month'] = pd.to_datetime(df['Date']).dt.month
