@@ -27,10 +27,12 @@ def select_sheet():
       scopes=st.secrets.scopes,
     )
     client = gspread.authorize(credentials)
-    # url=st.secrets.gcp_service_account.spreadsheet
-    workbook = client.open_by_url(st.secrets.gcp_service_account.spreadsheet)
+    workbookoption = st.radio('Select a workbook to begin:', (workbook for workbook in st.secrets.gcp_service_account.spreadsheets))
+    workbook = client.open(workbookoption)
+    
     sheets = workbook.worksheets()
-    option = st.radio('Select a sheet to begin:', (sheet.title for sheet in sheets[-5:]))
+    option = st.radio('Select a sheet:', (sheet.title for sheet in sheets[-5:]))
+    
     folder = option
     folder = folder.replace("/", "")
     if st.button("Confirm & Load Data"):

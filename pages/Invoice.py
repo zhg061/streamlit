@@ -42,7 +42,7 @@ crystal_names = [
         'morganite','kyanite','honey calcite','calcite','rhodonite','amazonite',
         'hematite','pyrite','obsidian','carnelian','serpentine','larimar',
         'howlite','sunstone','tanzanite','iolite','zircon','spinel','tourmaline',
-        'chrysocolla','lepidolite','smoky quartz','beryl','azurite','volcano agate',
+        'chrysocolla','lepidolite','smoky quartz','beryl','azurite','moss agate', 'volcano agate',
         'volcano ash','sphalerite','ocean jasper','pink agate','white druzy agate',
         'flower agate''agate','yooperlite','sphalerite','petrified wood','septarian',
         'shiva shells','deal', 'epidote', 'blue lace'
@@ -67,7 +67,7 @@ invoice_data = {
          {
              "invoice_date": today_date,
              "currency_code": "USD",
-             "note": "We appreciate your business and please come again!",
+             "note": "Thank you for your business, and we look forward to serving you again! If you'd like to keep your box open and check the shipping cost, please send us a message on Instagram, and we'll gladly waive it for you.",
              "payment_term": { "due_date": due_date }
           },
         "invoicer":
@@ -112,9 +112,7 @@ def generate_pdf_invoice(df, Username, folder, user_name_dict):
     pdf.set_font(font, style='B', size=16)
     pdf.multi_cell(0, 10, txt='Invoice')
     pdf.set_font(font, size=12)  # Reset font size after heading
-    name = user_name_dict[Username]+"(" + Username + ")"
-    if (user_name_dict[Username]==""):
-      name=Username
+    name = Username if (user_name_dict[Username]=="") else user_name_dict[Username]+"(" + Username + ")"
     content = [
         f"Dear {name},",
         "Please find the attached invoice for your recent purchase from Crystal Clear.",
@@ -409,23 +407,23 @@ def select_sheet():
               total = pd.concat([total, merged], ignore_index=True)          
               total_import.update([total.columns.values.tolist()] + total.fillna(-1).values.tolist())
           # pdf
-        #   status.update(label="Generating invoice PDF...", expanded=True)
-        #   users = np.unique(weekly.Username)
-        #   for i in range(len(users)):
-        #       Username= users[i]
-        #       df = weekly[weekly.Username == Username]
-        #       generate_pdf_invoice(df, Username, folder, user_name_dict)
-        #   status.update(label="Sending Invoices", expanded=True)
-        #   status_text = st.empty() 
-        #   progress_bar = st.progress(0)
-        #   for i in range(len(usernames)):
-        #       Username = usernames[i]
-        #       status_text.text("%i%% Complete" % int(100*(i+1)/len(usernames)))
-        #       progress_bar.progress((i+1)/len(usernames))
-        #       df = weekly[weekly.Username == Username]
-        #       send_invoice(df, Username, user_name_dict, user_email_dict)
-        #   status_text.empty()
-        #   progress_bar.empty()
+          status.update(label="Generating invoice PDF...", expanded=True)
+          users = np.unique(weekly.Username)
+          for i in range(len(users)):
+              Username= users[i]
+              df = weekly[weekly.Username == Username]
+              generate_pdf_invoice(df, Username, folder, user_name_dict)
+          status.update(label="Sending Invoices", expanded=True)
+          status_text = st.empty() 
+          progress_bar = st.progress(0)
+          for i in range(len(usernames)):
+              Username = usernames[i]
+              status_text.text("%i%% Complete" % int(100*(i+1)/len(usernames)))
+              progress_bar.progress((i+1)/len(usernames))
+              df = weekly[weekly.Username == Username]
+              send_invoice(df, Username, user_name_dict, user_email_dict)
+          status_text.empty()
+          progress_bar.empty()
           status.update(label="Done", state="complete", expanded=True)
 
 
