@@ -135,32 +135,39 @@ def generate_pdf_invoice(df, Username, folder, user_name_dict):
     for i in range(df.shape[0]):
         original_price = df.iloc[i].Price
         price = original_price# * 0.75
-        # if (df.iloc[i].Date == "12/21/2023"):
-        #   price = original_price * 0.65
-        #   discount += original_price * 0.35
-        #   table.append([df.iloc[i].Product, df.iloc[i].Date,
-        #                 f'${price:,.2f}(originally ${original_price:,.2f})'])
-        # else:
-        table.append([df.iloc[i].Product, df.iloc[i].Date,
-                        f'${original_price:,.2f}'])
+        if (df.iloc[i].Date == "5/10/2024"):
+            price = original_price * 0.75
+            discount += original_price * 0.25
+            table.append([df.iloc[i].Product, df.iloc[i].Date,
+                            f'${price:,.2f}(originally ${original_price:,.2f})'])
+        else:
+            table.append([df.iloc[i].Product, df.iloc[i].Date,
+                            f'${original_price:,.2f}'])
         total += price
     # Change: discount
     table.append(["", "Subtotal:", f'${np.sum(df.Price):,.2f}'])
-    table.append(["", "Shipping:", f'${np.sum(df.Shipping):,.2f}'])
-    # Add total price to the table
-    table.append(["", "Total:", f'${total+np.sum(df.Shipping):,.2f}'])
+    table.append(["", "Discount:", f'-${discount:,.2f}'])
+    if np.sum(df.Price) >= 200:
+        table.append(["", "Shipping:", f'${np.sum(df.Shipping):,.2f}'])
+        # Add total price to the table
+        table.append(["", "Total:", f'${total+np.sum(df.Shipping):,.2f}'])
+    else:
+        table.append(["", "Shipping: ", "0"])
+        # Add total price to the table
+        table.append(["", "Total:", f'${total:,.2f}'])
+    
     # Set table style
     col_width = pdf.w / 3.5
     row_height = 10
     for i, row in enumerate(table):
         for item in row:
             # Change
-            if ((i >= len(table) - 2) or (i==0)):
+            if ((i >= len(table) - 3) or (i==0)):
               pdf.set_font(font, style='B', size=12)
               pdf.cell(col_width, row_height, txt=item, border=0, align='C')
               pdf.set_font(font, size=12)
             # Change
-            elif (i == len(table) - 3):
+            elif (i == len(table) - 4):
               pdf.set_font(font, style='B', size=12)
               pdf.cell(col_width, row_height, txt=item, border='T', align='C')
             else:
@@ -180,7 +187,10 @@ def generate_pdf_invoice(df, Username, folder, user_name_dict):
         for para in content:
             pdf.multi_cell(0, 10, txt=para)
     # Save the PDF
-    pdf.output("./files/invoices/" + folder + "/" + name + "$" + str(total+np.sum(df.Shipping)) + ".pdf")
+    if np.sum(df.Price) >= 200:
+        pdf.output("./files/invoices/" + folder + "/" + name + "$" + str(total) + ".pdf")
+    else:
+        pdf.output("./files/invoices/" + folder + "/" + name + "$" + str(total+np.sum(df.Shipping)) + ".pdf")
 
 def send_invoice(df, Username, user_name_dict, user_email_dict):
   # PayPal API endpoint for obtaining an access token
@@ -212,28 +222,34 @@ def send_invoice(df, Username, user_name_dict, user_email_dict):
       invoice['primary_recipients'][0]['billing_info']['name']['given_name']=user_name_dict[Username]
       # change
       invoice["primary_recipients"][0]["billing_info"]["email_address"] = user_email_dict[Username]
+      total = 0
       for i in range(df.shape[0]):
         # change
-        # if (df.iloc[i].Date == "12/21/2023"):
-        #   invoice['items'].append(
-        #       { "name": df.iloc[i].Product,
-        #       "description": df.iloc[i].Date,
-        #         "quantity": "1",
-        #         "unit_amount": { "currency_code": "USD", "value": str(df.iloc[i].Price) },
-        #         "discount": {
-        #             "percent": "35",
-        #                     #  "amount": {"currency_code": "USD", "value": "2.5"}
-        #                     },
-        #         "unit_of_measure": "QUANTITY" })
-        # else:
-        invoice['items'].append(
-            { "name": df.iloc[i].Product,
-            "description": df.iloc[i].Date,
-            "quantity": "1",
-            "unit_amount": { "currency_code": "USD", "value": str(df.iloc[i].Price) },
-            "unit_of_measure": "QUANTITY" })
+        if (df.iloc[i].Date == "5/10/2024"):
+            total += 0.75*df.iloc[i].Price
+            invoice['items'].append(
+                { "name": df.iloc[i].Product,
+                "description": df.iloc[i].Date,
+                    "quantity": "1",
+                    "unit_amount": { "currency_code": "USD", "value": str(df.iloc[i].Price) },
+                    "discount": {
+                        "percent": "25",
+                                #  "amount": {"currency_code": "USD", "value": "2.5"}
+                                },
+                    "unit_of_measure": "QUANTITY" })
+        else:
+            total += df.iloc[i].Price
+            invoice['items'].append(
+                { "name": df.iloc[i].Product,
+                "description": df.iloc[i].Date,
+                "quantity": "1",
+                "unit_amount": { "currency_code": "USD", "value": str(df.iloc[i].Price) },
+                "unit_of_measure": "QUANTITY" })
       Shipping=np.sum(df.Shipping)
-      invoice["amount"]["breakdown"]["shipping"]["amount"]["value"]=str(Shipping)
+      if total >= 200:
+        invoice["amount"]["breakdown"]["shipping"]["amount"]["value"]="0"
+      else:
+        invoice["amount"]["breakdown"]["shipping"]["amount"]["value"]=str(Shipping)
       json_data = json.dumps(invoice)
       # Make the API request to create an invoice
       create_invoice_response = requests.post(create_invoice_url, headers=headers, data=json_data)
@@ -272,6 +288,7 @@ def fillTypes(types, weekly):
         input = row['Product'].lower()
         for c_type in types:
           if c_type in input:
+            st.write(weekly.iloc[index, 5])
             weekly.iloc[index, 5] = c_type
             break
         if weekly.iloc[index, 5] == '':
@@ -304,6 +321,7 @@ def load_data(sheet_import):
     if weekly['Price'].dtype == 'object':
         weekly['Price'] = weekly['Price'].str.replace('$', '')#.str.replace('.00', '')
     weekly['Price'] = weekly['Price'].astype(float)
+    
     # weekly['Username'] = weekly['Username'].str.replace(' ', '')
     if 'Username' in weekly.columns:
         weekly['Username'] = weekly['Username'].apply(remove_special_characters)
@@ -390,41 +408,45 @@ def select_sheet():
     # Button for action
     if st.button("Confirm & Load Data"):
         with st.status("Loading and Cleaning Data...", expanded=True) as status:
-          sheet_import = workbook.worksheet(option)
-          weekly = load_data(sheet_import)          
-          status.update(label="Checking for customer information...", expanded=True)
-          user_name_dict, user_email_dict, usernames, customer = checkCustomer(weekly)
-          # update total 
-          status.update(label="Update Total...", expanded=True)
-          # change: sheet name
-          summary = client.open('Summary')
-          total_import = summary.worksheet("Total")
-          total = pd.DataFrame(total_import.get_all_records())
-          if folder not in np.unique(total['Sheet']):
-              weekly['Sheet'] = folder
-              merged = pd.merge(weekly, customer, on='Username', how='left')
-              merged = merged.drop(columns=['Username', 'Email', 'App', 'Pickup', 'Name', 'DateAdded'])
-              total = pd.concat([total, merged], ignore_index=True)          
-              total_import.update([total.columns.values.tolist()] + total.fillna(-1).values.tolist())
-          # pdf
-          status.update(label="Generating invoice PDF...", expanded=True)
-          users = np.unique(weekly.Username)
-          for i in range(len(users)):
-              Username= users[i]
-              df = weekly[weekly.Username == Username]
-              generate_pdf_invoice(df, Username, folder, user_name_dict)
-          status.update(label="Sending Invoices", expanded=True)
-          status_text = st.empty() 
-          progress_bar = st.progress(0)
-          for i in range(len(usernames)):
-              Username = usernames[i]
-              status_text.text("%i%% Complete" % int(100*(i+1)/len(usernames)))
-              progress_bar.progress((i+1)/len(usernames))
-              df = weekly[weekly.Username == Username]
-              send_invoice(df, Username, user_name_dict, user_email_dict)
-          status_text.empty()
-          progress_bar.empty()
-          status.update(label="Done", state="complete", expanded=True)
+            sheet_import = workbook.worksheet(option)
+            weekly = load_data(sheet_import) 
+            if 'Invoice_Sent' in weekly.columns:
+                weekly = weekly[weekly.Invoice_Sent != 1]         
+            status.update(label="Checking for customer information...", expanded=True)
+            user_name_dict, user_email_dict, usernames, customer = checkCustomer(weekly)
+            # update total 
+            status.update(label="Update Total...", expanded=True)
+            # change: sheet name
+            summary = client.open('Summary')
+            total_import = summary.worksheet("Total")
+            total = pd.DataFrame(total_import.get_all_records())
+            if folder not in np.unique(total['Sheet']):
+                weekly['Sheet'] = folder
+                merged = pd.merge(weekly, customer, on='Username', how='left')
+                merged = merged.drop(columns=['Username', 'Email', 'App', 'Pickup', 'Name', 'DateAdded'])
+                total = pd.concat([total, merged], ignore_index=True)          
+                total_import.update([total.columns.values.tolist()] + total.fillna(-1).values.tolist())
+            # pdf
+            status.update(label="Generating invoice PDF...", expanded=True)
+            users = np.unique(weekly.Username)
+            for i in range(len(users)):
+                Username= users[i]
+                df = weekly[weekly.Username == Username]
+                generate_pdf_invoice(df, Username, folder, user_name_dict)
+            status.update(label="Sending Invoices", expanded=True)
+            status_text = st.empty() 
+            progress_bar = st.progress(0)
+
+          
+            for i in range(len(usernames)):
+                Username = usernames[i]
+                status_text.text("%i%% Complete" % int(100*(i+1)/len(usernames)))
+                progress_bar.progress((i+1)/len(usernames))
+                df = weekly[weekly.Username == Username]
+                send_invoice(df, Username, user_name_dict, user_email_dict)
+            status_text.empty()
+            progress_bar.empty()
+            status.update(label="Done", state="complete", expanded=True)
 
 
 st.set_page_config(page_title="Invoice", page_icon="📹")
