@@ -19,7 +19,12 @@ def printPDF(username, folder):
     # # Print the PDF
     os.startfile(folder_path + "/" + matching_file, 'print')
     st.stop()
-
+def remove_special_characters(input_string):
+    # Define a set of characters to be removed
+    special_chars = ' ,._`;\''
+    # Use str.strip() to remove leading and trailing occurrences of specified characters
+    cleaned_string = input_string.strip(special_chars)
+    return cleaned_string
 def select_sheet():
     skey = st.secrets["gcp_service_account"]
     credentials = Credentials.from_service_account_info(
@@ -31,7 +36,7 @@ def select_sheet():
     workbook = client.open(workbookoption)
     
     sheets = workbook.worksheets()
-    option = st.radio('Select a sheet:', (sheet.title for sheet in sheets[-5:]))
+    option = st.radio('Select a sheet:', (sheet.title for sheet in sheets[-5:]), index=len(sheets[-5:])-1)
     
     folder = option
     folder = folder.replace("/", "")
@@ -39,17 +44,17 @@ def select_sheet():
         sheet_import = workbook.worksheet(option)
         weekly_records = sheet_import.get_all_records()
         weekly = pd.DataFrame.from_dict(weekly_records)
+        weekly['Username'] = weekly['Username'].apply(remove_special_characters)
+        if weekly['Price'].dtype == 'object':
+            weekly['Price'] = weekly['Price'].str.replace('$', '')
         date_format = "%m/%d/%Y"
         min_date = datetime.strptime(weekly['Date'].max(), date_format).date()
         max_date = datetime.strptime(datetime.now().date().strftime(date_format), date_format).date()
         
         usernames = get_invoice(min_date, max_date)
-        for username in usernames:             
-            if weekly[weekly['Username'] == username]['BoxClosed'].iloc[0] == '':
+        for username in usernames:
+            if weekly[weekly['Username'] == username].shape[0] > 0 and weekly[weekly['Username'] == username]['BoxClosed'].iloc[0] == '':
                 st.write(username, " just paid")
-                if np.sum(weekly[weekly['Username'] == username]['Price']) >= 50:
-                    st.write(username, " free geode")
-                # printPDF(username, folder)
             weekly.loc[weekly['Username'] == username, 'BoxClosed'] = 1
         sheet_import.update([weekly.columns.values.tolist()] + weekly.fillna(-1).values.tolist())
 

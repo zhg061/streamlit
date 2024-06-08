@@ -17,7 +17,7 @@ def get_instagram_follower_count(username):
     url = f"https://graph.facebook.com/{st.secrets.version}/{st.secrets.igUserId}?fields=business_discovery.username({username}){{{st.secrets.fields}}}&access_token={st.secrets.access_token}"
     # Send GET request to Instagram API
     response = requests.get(url)
-    st.write(response)
+    # st.write(url, response.json())
     # Check if the request was successful
     if response.status_code == 200:
         data = response.json()

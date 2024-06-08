@@ -401,7 +401,7 @@ def select_sheet():
     workbook = client.open(workbookoption)
     
     sheets = workbook.worksheets()
-    option = st.radio('Select a sheet:', (sheet.title for sheet in sheets[-5:]))
+    option = st.radio('Select a sheet:', (sheet.title for sheet in sheets[-3:]), index=len(sheets[-3:])-1)
     folder = option
     folder = folder.replace("/", "")
     os.makedirs('./files/invoices/' + folder, exist_ok=True)
