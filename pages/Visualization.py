@@ -59,6 +59,7 @@ def plotting_demo(df):
     progress_bar.empty()
     status_text.empty()
     df
+    st.write('Total', np.sum(df.Price))
     # Streamlit widgets automatically run the script from top to bottom. Since
     # this button is not connected to any other logic, it just causes a plain
     # rerun.

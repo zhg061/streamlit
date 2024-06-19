@@ -378,8 +378,10 @@ def checkCustomer(weekly):
     usernames = [x for x in usernames if x not in pickup]
     new_york_timezone = pytz.timezone('America/New_York')
     ny_time = datetime.now(new_york_timezone)
+    missingCustomer = False
     for username in usernames:
       if username not in user_email_dict:
+        missingCustomer = True
         new_row = {'Username': username, 'Name': '', 'Email': '', 'App': '',
                    'Pickup': 1, 'DateAdded': ny_time.strftime("%m/%d/%Y"),
                    'id': generate_unique_random_number(customer, 'id')}
@@ -388,7 +390,7 @@ def checkCustomer(weekly):
       elif user_email_dict[username] == "":
         print(username, user_email_dict[username], "email")
     customer_import.update([customer.columns.values.tolist()] + customer.fillna(-1).values.tolist())
-    return [user_name_dict, user_email_dict, usernames, customer]
+    return [user_name_dict, user_email_dict, usernames, customer, missingCustomer]
 def select_sheet():
     skey = st.secrets["gcp_service_account"]
     credentials = Credentials.from_service_account_info(
@@ -413,7 +415,9 @@ def select_sheet():
             if 'Invoice_Sent' in weekly.columns:
                 weekly = weekly[weekly.Invoice_Sent != 1]         
             status.update(label="Checking for customer information...", expanded=True)
-            user_name_dict, user_email_dict, usernames, customer = checkCustomer(weekly)
+            user_name_dict, user_email_dict, usernames, customer, missingCustomer = checkCustomer(weekly)
+            if missingCustomer == True:
+                st.error("Go to " + st.secrets.customerSheet + " to update missing emails then change its pickup value to 0. Then, come back and rerun the code.")
             # update total 
             status.update(label="Update Total...", expanded=True)
             # change: sheet name

@@ -70,6 +70,7 @@ df.sort_values(by=['Account', 'Date'], inplace=True)
 df['Follower Increase'] = df.groupby('Account')['Followers'].diff()
 df['Posts Increase'] = df.groupby('Account')['Posts'].diff()
 df[df.Account=='crystal.clear.cc']
+df[df.Account=='crystal.clear.select']
 # Filter to get entries with an increase in posts and followers
 filtered_df = df[(df['Follower Increase'] > 0) & (df['Posts Increase'] > 0)]
 # Get the latest entry for each account meeting the condition
