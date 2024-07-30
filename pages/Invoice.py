@@ -67,7 +67,7 @@ invoice_data = {
          {
              "invoice_date": today_date,
              "currency_code": "USD",
-             "note": "Thank you for your business, and we look forward to serving you again! If you'd like to keep your box open and check the shipping cost, please send us a message on Instagram, and we'll gladly waive it for you.",
+             "note": "Thank you for your business! We look forward to serving you again. If you'd like to keep your box open and check the shipping cost, please send us a message on Instagram, and we'll gladly waive it for you. If you have any questions about your invoice, feel free to message us. We might make occasional mistakes, but we'll always do our best to assist you. Thank you for supporting our small business!",
              "payment_term": { "due_date": due_date }
           },
         "invoicer":
@@ -288,11 +288,11 @@ def fillTypes(types, weekly):
         input = row['Product'].lower()
         for c_type in types:
           if c_type in input:
-            st.write(weekly.iloc[index, 5])
-            weekly.iloc[index, 5] = c_type
+            st.write(weekly.iloc[index, 6])
+            weekly.iloc[index, 6] = c_type
             break
-        if weekly.iloc[index, 5] == '':
-          weekly.iloc[index, 5] = 'deal'
+        if weekly.iloc[index, 6] == '':
+          weekly.iloc[index, 6] = 'deal'
     return weekly
 def fillShapes(shapes, weekly):
     for index, row in weekly.iterrows():
@@ -300,10 +300,10 @@ def fillShapes(shapes, weekly):
         input = row['Product'].lower()
         for c_shape in shapes:
           if c_shape in input:
-            weekly.iloc[index, 6] = c_shape
+            weekly.iloc[index, 7] = c_shape
             break
-        if weekly.iloc[index, 6] == '':
-          weekly.iloc[index, 6] = 'deal'
+        if weekly.iloc[index, 7] == '':
+          weekly.iloc[index, 7] = 'deal'
     return weekly
 def updateShipping(name, price, weekly):
     weekly[weekly.Username == name].Shipping[0]=price
@@ -326,6 +326,11 @@ def load_data(sheet_import):
     if 'Username' in weekly.columns:
         weekly['Username'] = weekly['Username'].apply(remove_special_characters)
     weekly['Product'] = weekly['Product'].apply(remove_special_characters)
+    if 'Count' not in weekly.columns:
+        weekly['Count'] = 1
+    else:
+        weekly['Count'].replace('', pd.NA, inplace=True)  # Only needed if you have empty strings
+        weekly['Count'].fillna(1, inplace=True)
     if 'Shipping' not in weekly.columns:
         weekly['Shipping'] = 0
     else:
@@ -416,9 +421,9 @@ def select_sheet():
                 weekly = weekly[weekly.Invoice_Sent != 1]         
             status.update(label="Checking for customer information...", expanded=True)
             user_name_dict, user_email_dict, usernames, customer, missingCustomer = checkCustomer(weekly)
-            if missingCustomer == True:
-                st.error("Go to " + st.secrets.customerSheet + " to update missing emails then change its pickup value to 0. Then, come back and rerun the code.")
-            # update total 
+            # if missingCustomer == True:
+            #     st.error("Go to " + st.secrets.customerSheet + " to update missing emails then change its pickup value to 0. Then, come back and rerun the code.")
+            # # update total 
             status.update(label="Update Total...", expanded=True)
             # change: sheet name
             summary = client.open('Summary')
